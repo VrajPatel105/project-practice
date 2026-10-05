@@ -66,13 +66,36 @@ class Scheduler():
                     self.block_manager.allocate(sequence.seq_id, blocks_required - blocks_assigned)
 
     def _admit_waiting_seq(self):
-        pass
+
+        # I will apply loose fcfs. 
+
+        front_sequence = self.waiting_seqs[0]
+
+        if self.skip_counts.get(front_sequence.seq_id, 0) >= self.skip_threshold:
+            blocks_required = len(front_sequence.prompt_token_ids) // self.block_size
+            if self.block_manager.can_allocate(blocks_required):
+                    self.block_manager.allocate(seq_id=sequence.seq_id, num_block_for_seq=blocks_required)
+                    self.running_seqs.append(sequence)
+                    del self.skip_counts[sequence.seq_id]
+                    self.waiting_seqs.remove(sequence)
+            return
+
+        else:
+            for sequence in self.waiting_seqs[:self.lookahead_window]:
+                blocks_required = len(sequence.prompt_token_ids) // self.block_size
+                if self.block_manager.can_allocate(blocks_required):
+                    self.block_manager.allocate(seq_id=sequence.seq_id, num_block_for_seq=blocks_required)
+                    self.running_seqs.append(sequence)
+                    del self.skip_counts[sequence.seq_id]
+                    self.waiting_seqs.remove(sequence)
+                else:
+                    current_skip_count = self.skip_counts.get(sequence.seq_id, 0)
+                    self.skip_counts.get(sequence.seq_id, 0) = current_skip_count + 1
 
     def build_scheduler_output(self):
 
         prefill_seqs = []
         decode_seqs = []
-        finished_seqs = []
 
         # we simply check if the current sequence is prefill or decode by just identifying the length of the entire sequence tokens so far.
         # if the tokens so far is same as the initial length of prompt token ids then it's prefill and even if it's just increased by 1, it's decode
@@ -81,9 +104,7 @@ class Scheduler():
 
             if len(sequence.prompt_token_ids) == len(sequence.seq_id):
                 prefill_seqs.append(sequence)
-            elif(len(sequence.prompt_token_ids) > len(sequence.seq_id)):
+            elif (len(sequence.prompt_token_ids) > len(sequence.seq_id)):
                 decode_seqs.append(sequence)
-            else:
-                finished_seqs.append(sequence)
 
-        return Scheduler_Output(prefill_seqs=prefill_seqs, decode_seqs=decode_seqs, finished_seqs=finished_seqs)
+        return Scheduler_Output(prefill_seqs=prefill_seqs, decode_seqs=decode_seqs, finished_seqs=self.finished_seqs)
