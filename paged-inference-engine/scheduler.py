@@ -1,7 +1,7 @@
 from block_manager import BlockManager
 from sequence import Sequence
 from dataclasses import dataclass
-
+import math
 
 @dataclass
 class Scheduler_Output:
@@ -55,7 +55,15 @@ class Scheduler():
 
 
     def _allocate_decode(self):
-        pass
+
+        for sequence in self.running_seqs:
+
+            blocks_assigned = len(self.block_manager.block_table[sequence.seq_id])
+            blocks_required =  math.ceil(len(sequence.token_ids) + 1 / self.block_size)
+
+            if blocks_required > blocks_assigned:
+                if self.block_manager.can_allocate(blocks_required - blocks_assigned):
+                    self.block_manager.allocate(sequence.seq_id, blocks_required - blocks_assigned)
 
     def _admit_waiting_seq(self):
         pass
