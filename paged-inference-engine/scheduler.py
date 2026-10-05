@@ -42,17 +42,25 @@ class Scheduler():
         self._admit_waiting_seq()
         return self.build_scheduler_output()
 
-    def _free_finished_seq(self, ):
+    def _free_finished_seq(self):
+
+        running_seqs_cpy = self.running_seqs.copy()
+
+        for sequence in running_seqs_cpy:
+            if sequence.is_finished or len(sequence.token_ids) >= sequence.max_token_to_generate_for_this_sequence + sequence.prompt_token_ids or len(sequence.token_ids) > self.max_len:
+                sequence.is_finished = True
+                self.finished_seqs.append(sequence)
+                self.block_manager.release_blocks(sequence.seq_id)
+                self.running_seqs.remove(sequence)
+
+
+    def _allocate_decode(self):
         pass
 
-
-    def _allocate_decode(self, ):
+    def _admit_waiting_seq(self):
         pass
 
-    def _admit_waiting_seq(self, ):
-        pass
-
-    def build_scheduler_output(self, ):
+    def build_scheduler_output(self):
 
         prefill_seqs = []
         decode_seqs = []
