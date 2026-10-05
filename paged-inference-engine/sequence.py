@@ -8,5 +8,5 @@ class Sequence:
         self.seq_id = seq_id
         self.prompt_token_ids = prompt_token_ids
         self.max_token_to_generate_for_this_sequence = max_token_to_generate_for_this_sequence
-        self.token_ids = len(prompt_token_ids)
+        self.token_ids = list(prompt_token_ids)
         self.is_finished = False 
