@@ -25,10 +25,15 @@ class BlockManager:
 
         total_num_blocks_available = self.check_num_block()
 
+        print("check total num block available : ")
+        print(total_num_blocks_available)
+
         if total_num_blocks_available < num_block_for_seq:
+            print("\n inside print statement of if block \n")
             return AllocResult(AllocStatus.INSUFFICIENT_MEMORY, None)
 
-
+        print("num block for seq")
+        print(num_block_for_seq)
         for _ in range(num_block_for_seq):
 
             if seq_id in self.block_table:
