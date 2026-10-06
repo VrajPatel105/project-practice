@@ -77,6 +77,9 @@ class Scheduler():
 
         # I will apply loose fcfs. 
 
+        if not self.waiting_seqs:
+            return
+
         front_sequence = self.waiting_seqs[0]
         print("front_sequence.seq_id ", front_sequence.seq_id)
         print("front_sequence.prompt_token_ids ", len(front_sequence.prompt_token_ids))
@@ -87,7 +90,7 @@ class Scheduler():
             if self.block_manager.can_allocate(blocks_required):
                     self.block_manager.allocate(seq_id=sequence.seq_id, num_block_for_seq=blocks_required)
                     self.running_seqs.append(sequence)
-                    del self.skip_counts[sequence.seq_id]
+                    self.skip_counts.pop(sequence.seq_id, None)
                     self.waiting_seqs.remove(sequence)
             return
 
@@ -98,7 +101,7 @@ class Scheduler():
                 if self.block_manager.can_allocate(blocks_required):
                     self.block_manager.allocate(seq_id=sequence.seq_id, num_block_for_seq=blocks_required)
                     self.running_seqs.append(sequence)
-                    del self.skip_counts[sequence.seq_id]
+                    self.skip_counts.pop(sequence.seq_id, None)
                     self.waiting_seqs.remove(sequence)
                 else:
                     current_skip_count = self.skip_counts.get(sequence.seq_id, 0)
@@ -114,9 +117,11 @@ class Scheduler():
 
         for sequence in self.running_seqs:
 
-            if len(sequence.prompt_token_ids) == len(sequence.seq_id):
+            print("len(sequence.prompt_token_ids)", len(sequence.prompt_token_ids))
+
+            if len(sequence.prompt_token_ids) == len(sequence.token_ids):
                 prefill_seqs.append(sequence)
-            elif (len(sequence.prompt_token_ids) > len(sequence.seq_id)):
+            elif (len(sequence.prompt_token_ids) > len(sequence.token_ids)):
                 decode_seqs.append(sequence)
 
         return Scheduler_Output(prefill_seqs=prefill_seqs, decode_seqs=decode_seqs, finished_seqs=self.finished_seqs)
